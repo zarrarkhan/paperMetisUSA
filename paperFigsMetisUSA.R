@@ -4,6 +4,15 @@
 
 # Paper Repo: https://github.com/zarrarkhan/paperMetisUSA
 
+#----------------------------
+# Plan
+#----------------------------
+# Plots for water scarcity by Basin, State, County, Grid (Ref, Wat Const, Diff)
+# GCAM gives: Wat withdraw by State, Basin, Wat Sup by Basin (Scarcity by Basin can be Calculated)
+# Gridded Data: Wat withdraw and supply
+# By State, county (need to upscale wat supply), By county need to upscale wat withdraw
+
+
 
 #----------------------------
 # Load Libraries
@@ -12,11 +21,12 @@
 library(metis); library(tidyr); library(dplyr)
 
 #----------------------------
-# Global Directories
+# Global Inputs
 #----------------------------
 
 
 dirOutputs_i = "C:/Z/projects/metisGCAMUSA/metisOutputs"
+xRange_i = c(2010,2015,2020,2025)
 
 
 #------------------------------
@@ -26,12 +36,12 @@ dirOutputs_i = "C:/Z/projects/metisGCAMUSA/metisOutputs"
 if(T){
 folder_i = "baseMaps"
 # GCAM
-metis.map(dataPolygon=raster::crop(metis::mapGCAMBasins,metis::mapUS49),fillColumn = "subRegion",labels=F,
+metis.map(dataPolygon=metis::mapGCAMBasinsUS49,fillColumn = "subRegion",labels=F,
 printFig=T,facetsON=F, dirOutputs = dirOutputs_i, fileName="US49GCAMBasin", folderName=folder_i)
-metis.map(dataPolygon=raster::crop(metis::mapGCAMBasins,metis::mapUS49),fillColumn = "subRegion",labels=T,
+metis.map(dataPolygon=metis::mapGCAMBasinsUS49,fillColumn = "subRegion",labels=T,
           printFig=T,facetsON=F, dirOutputs = dirOutputs_i, fileName="US49GCAMBasinLabel", folderName=folder_i)
-metis.map(dataPolygon=raster::crop(metis::mapGCAMLand,metis::mapUS49),fillColumn = "subRegion",labels=F,
-printFig=T,facetsON=F, dirOutputs = dirOutputs_i, fileName="US49GCAMGLU",folderName=folder_i)
+# metis.map(dataPolygon=raster::crop(metis::mapGCAMLand,metis::mapUS49),fillColumn = "subRegion",labels=F,
+# printFig=T,facetsON=F, dirOutputs = dirOutputs_i, fileName="US49GCAMGLU",folderName=folder_i)
 # US
 metis.map(dataPolygon=metis::mapUS49,fillColumn = "subRegion",labels=F,
           printFig=T,facetsON=F, dirOutputs = dirOutputs_i, fileName="US49State",folderName=folder_i)
@@ -59,9 +69,9 @@ scenNewNames_i <-c("Ref","WatConst")
 paramsSelect_i <- c("elecByTechTWh", "elecCapByFuel", "pop",
                     "watWithdrawByCrop","watWithdrawBySec","watConsumBySec","watSupRunoffBasin",
                  "landAlloc","landAllocByCrop")
-regionsSelect_i <- c(metis.assumptions()$US52,"USA", "Pakistan")
+regionsSelect_i <- c(metis.assumptions()$US52,"USA")
 
-dataGCAM<-metis.readgcam(#gcamdatabase = gcamdatabase_i,
+dataGCAM<-metis.readgcam(gcamdatabase = gcamdatabase_i,
                          dataProjFile = dataProjFile_i,
                          scenOrigNames = scenOrigNames_i,
                          scenNewNames = scenNewNames_i,
@@ -70,13 +80,13 @@ dataGCAM<-metis.readgcam(#gcamdatabase = gcamdatabase_i,
                          dirOutputs = dirOutputs_i)
 
 
+unique(dataGCAM$data$scenario)
+unique(dataGCAM$data$param)
 
+if(T){ # Check outputs against known data
 
-df <- dataGCAM$data
-unique(df$scenario)
-unique(df$param)
+df <-  dataGCAM$data
 
-if(F){ # Check outputs against known data
 #---------------------------------------------
 # Check Data:
 # Water supply Runoff
@@ -84,7 +94,8 @@ if(F){ # Check outputs against known data
 # US - GCAM 3629 km3
 # FAO Total renewable surface water = 2900 km3)
 (df%>%dplyr::filter(param=="watSupRunoffBasin"))$region%>%unique()
-df%>%filter(param=="watSupRunoffBasin", scenario=="WatConst",x==2015,region=="USA")%>% dplyr::summarize(valSum=sum(value,na.rm=T))
+runoffGCAM2015 <- df%>%filter(param=="watSupRunoffBasin", scenario=="WatConst",x==2015,region=="USA")%>% dplyr::summarize(valSum=sum(value,na.rm=T))
+runoffGCAM2015
 
 #------------------------------------------------
 # Water Demands (US/CA/TX)
@@ -101,13 +112,13 @@ df%>%filter(param=="watSupRunoffBasin", scenario=="WatConst",x==2015,region=="US
 # Municpal = 58.93 km3
 (df%>%dplyr::filter(param=="watWithdrawBySec"))$region%>%unique()
 df%>%filter(param=="watWithdrawBySec", scenario=="WatConst",x==2015,region %in% metis.assumptions()$US52)%>%
-  dplyr::group_by(scenario, param, x) %>% dplyr::summarize(valSum=sum(value,na.rm=T))
+  dplyr::group_by(scenario, param, x) %>% dplyr::summarize(valSum=sum(value,na.rm=T)) -> wwithdrawGCAM2015
+wwithdrawGCAM2015
 df%>%filter(param=="watWithdrawBySec", scenario=="WatConst",x==2015,region %in% metis.assumptions()$US52)%>%
   dplyr::group_by(scenario, param, class1,x) %>% dplyr::summarize(valSum=sum(value,na.rm=T))
 # Check Water withdrawals by Crops summed for US
 df%>%filter(param=="watWithdrawByCrop", scenario=="WatConst",x==2015,region=="USA")%>%
   dplyr::group_by(scenario, param, x) %>% dplyr::summarize(valSum=sum(value,na.rm=T))
-
 
 #--------------------------------------------------
 # Electricity Generation (US/CA/TX)
@@ -135,121 +146,132 @@ df%>%filter(param=="elecByTechTWh",scenario=="WatConst",x==2015, region=="CA")%>
 # Food demand (US/CA/TX)
 } # Check outputs against known data
 
+runoffGCAM2015
+wwithdrawGCAM2015
+
 }
 
 
 #------------------------------
-# Maps Process GCAM Regions
+# Maps Process GCAM Data
 #-------------------------------
 
+if(T){
 # Read Output data from metis.readGCAM aggregated by param
-dfparam <- data.table::fread(paste(dirOutputs_i,"/readGCAM/Tables_gcam/gcamDataTable_aggParam.csv",sep=""))
-# Read Output data from metis.readGCAM aggregated by class
-dfclass <- data.table::fread(paste(dirOutputs_i,"/readGCAM/Tables_gcam/gcamDataTable_aggClass1.csv",sep=""))
+#dfparam <- data.table::fread(paste(dirOutputs_i,"/readGCAM/Tables_gcam/gcamDataTable_aggParam.csv",sep=""))
+#dfclass <- data.table::fread(paste(dirOutputs_i,"/readGCAM/Tables_gcam/gcamDataTable_aggClass1.csv",sep=""))
+dfparam <- dataGCAM$dataAggParam
+dfclass <- dataGCAM$dataAggClass1
 
+unique(dfparam$subRegType);unique(dfparam$param);
 
 #-------------------------------------
-# Data by GCAMBasin (watSupRunoff)
+# Data by US States - Total
 
-# Plot Maps
-metis.mapsProcess(polygonDataTables=dfparam,
-                  subRegShape=metis::mapGCAMBasinUS49,
-                  xRange=c(2010,2020),
+metis.mapsProcess(polygonDataTables=dfparam %>% filter(param %in% c("watWithdrawBySec","watSupRunoffBasin"),
+                                                       !subRegion %in% c("AK","PR","HI",
+                                                                         "Hawaii","Caribbean","Pacific_and_Arctic_Coast")),
+                  xRange=xRange_i,
                   dirOutputs = dirOutputs_i,
-                  extension =T)
+                  nameAppend = "total",
+                  scenRef = "Ref")
 
-#------------- Data by States
+# Waterwithdrawals by Sec by Basins
+cols_i <- names(dataGCAM$data)[]
+dfparamWatWithBasinParam <- dataGCAM$data%>%
+  dplyr::filter(param=="watWithdrawBySec", !region %in% c("AK","PR","HI"), !class2 %in% c("Caribbean","Pacific and Arctic Coast"))%>%
+  dplyr::mutate(region=gsub(" ","_",gsub("-","_",class2)),
+                subRegion=region,
+                param="watWithdrawBySecBasin")%>%
+  dplyr::select(scenario, region, subRegion, param, sources, x, xLabel, vintage, units, value,
+                aggregate)%>%
+  dplyr::group_by(scenario, region, subRegion,    param, sources, x, xLabel, vintage, units,
+                  aggregate)%>%dplyr::summarize_at(dplyr::vars("value"),list(~sum(.,na.rm = T)))%>%
+  dplyr::ungroup(); head(dfparamWatWithBasinParam)
 
-# Shape Data
-shapex <- metis::mapUS49  # Shape file Crop GCAM basins to US49 border
-shapex@data$subRegion%>%unique();
+a<-unique(dfparamWatWithBasinParam$subRegion); b<-unique(metis::mapGCAMBasinsUS49$subRegion)
+a[!a %in% b];
 
-# Prep Data
-dfx <- df %>% dplyr::filter(param %in% c('watWithdrawBySec','elecByTechTWh',"watConsumBySec")) %>%
-  dplyr::select(scenario, subRegion=region, param, class=class1, x, value,
-                units, classPalette=classPalette1, classLabel=classLabel1) %>%
-  dplyr::mutate(class="total") %>%
-  dplyr::group_by(scenario, subRegion, param, class, x,
-                  units, classPalette, classLabel) %>%
-  dplyr::summarize(value=sum(value,na.rm=T))%>%
-  dplyr::ungroup() %>%
-  dplyr::bind_rows(df %>% dplyr::filter(param %in% c('pop',"gdpPerCapita")) %>%
-                     dplyr::select(scenario, subRegion=region, param, class=class1, x, value,
-                                   units, classPalette=classPalette1, classLabel=classLabel1))
+metis.mapsProcess(polygonDataTables=dfparamWatWithBasinParam,
+                  xRange=xRange_i,
+                  dirOutputs = dirOutputs_i,
+                  nameAppend = "total",
+                  scenRef = "Ref")
 
-
-#dfx <- df %>% dplyr::filter(param %in% c('pop',"gdpPerCapita","watWithdrawBySec","watConsumBySec",
-#                                         "elecByTechTWh")) # GCAM data
-dfx <- dfx %>% dplyr::filter(subRegion!="USA")
-dfx <- dfx  %>%
-  dplyr::mutate(classPalette=case_when(param=="pop"~"pal_hot",
-                                       param=="watWithdrawBySec"~"pal_wet",
-                                       param=="gdpPerCapita"~"pal_hot",
-                                       param=="elecByTechTWh"~"pal_hot",
-                                       param=="watConsumBySec"~"pal_wet",
-                                       TRUE~classPalette))
-dfx$subRegion%>%unique(); dfx$scenario%>%unique(); dfx$param%>%unique()
-# Plot Maps
-
-scenRefDiffIndv_i = list(param=list(c('pop',"gdpPerCapita","watWithdrawBySec","watConsumBySec",
-                                        "elecByTechTWh")),
-                         scenRef=list(c("Ref")),
-                         scenDiff=list(c("WatConst")),
-                         scenIndv=list(c("Ref","WatConst")))
-
-metis.mapsProcess(polygonDataTables=dfx,
-                  xRange=c(2010,2020,2030,2040,2050),
-                  folderName="metisUSA",
-                  subRegShape=shapex,
-                  subRegCol="subRegion",
-                  nameAppend="_US49",
-                  animateOn=F,
-                  fps=1,
-                  extension=F,
-                  #scenRefDiffIndv=scenRefDiffIndv_i,
-                  diffOn = F)
-
-
-#----------------------- Data by GCAM Land
-
-df$param%>%unique()
-# Prep Data
-dfx <- df %>% dplyr::filter(param=="landAllocByCrop") # GCAM data
-shapex <- raster::crop(metis::mapGCAMLand,metis::mapUS49)  # Shape file Crop GCAM basins to US49 border
-# Harmonize Basin Names
-shapex@data <- shapex@data %>% droplevels()
-shapex@data$subRegion%>%unique();
-dfx$region%>%unique()
-dfx <- dfx %>% dplyr::mutate(region=gsub(" ","_",region),region=paste(region,"_Basin",sep=""),
-                             classPalette1="pal_wet")
-dfx <- dfx %>% dplyr::select(scenario, subRegion=region, param, class=class1, x, value,
-                             units, classPalette=classPalette1, classLabel=classLabel1)
-dfx$subRegion%>%unique(); dfx$scenario%>%unique()
-# Plot Maps
-
-metis.mapsProcess(polygonDataTables=dfx,
-                  xRange=c(2010,2020,2030,2040,2050),
-                  folderName="metisUSA",
-                  subRegShape=shapex,
-                  subRegCol="subRegion",
-                  nameAppend="",
-                  animateOn=T,
-                  fps=1,
-                  extension=F,
-                  diffOn = F)
-
-
+}
 
 #------------------------------
-# Downscaled  (Xanthos/Tethys/BIa/Demeter)
-#-----------------------------
+# Grid prep downscaled data metis.prepGrid.R
+#-------------------------------
 
+if(T){
+
+  gridMetis <- metis.prepGrid (tethysFolders=c("C:/Z/projects/downscaling/tethys/example/Output/gcamMetisUSA_Ref",
+                                               "C:/Z/projects/downscaling/tethys/example/Output/gcamMetisUSA_WatConst"),
+                  tethysScenarios=c("Ref","WatConst"),
+                  tethysUnits=c("km3"),
+                  tethysFiles=paste(c("wddom","wdelec","wdirr","wdliv","wdmfg","wdmin","wdnonag","wdtotal"),"_km3peryr",sep=""),
+                  dirOutputs = dirOutputs_i,
+                  xanthosCoordinatesPath=paste(getwd(),"/dataFiles/grids/xanthosReference/coordinates.csv",sep=""),
+                  xanthosGridAreaHecsPath=paste(getwd(),"/dataFiles/grids/xanthosReference/Grid_Areas_ID.csv",sep="")
+                  )
+
+
+  grid_i <- list.files(paste(dirOutputs_i,"/prepGrid/",sep=""),full.names = T);
+  grid_i <- grid_i[grepl(".rds",grid_i)];grid_i
+  paramScenariosFile <- paste(dirOutputs_i,"/prepGrid/paramScenarios.csv",sep="");
+  paramScenarios_i <- data.table::fread(paramScenariosFile);paramScenarios_i
+  paramsSelect_i = unique(paramScenarios_i$param); paramsSelect_i
+  scenariosSelect_i = unique(paramScenarios_i$scenario); scenariosSelect_i
+
+  g1 <- readRDS(grid_i[1]); head(g1)
+
+}
 
 #------------------------------
-# Upscaled (Counties, HUC2)
-#-----------------------------
+# Grid to Poly
+#-------------------------------
 
+if(T){
+
+  subRegShape_i = metis::mapUS49County
+  subRegCol_i = "subRegion"
+  subRegType_i = "county"
+  nameAppend_i = "_vol"
+  aggType_i = "vol"
+
+  grid2polyX<-metis.grid2poly(gridFiles=grid_i[1],
+                              subRegShape =subRegShape_i,
+                              subRegCol=subRegCol_i,
+                              subRegType = subRegType_i,
+                              aggType=aggType_i,
+                              nameAppend=nameAppend_i,
+                              paramsSelect = paramsSelect_i,
+                              scenariosSelect = scenariosSelect_i,
+                              #paramScenariosFixed=paramScenarios_i,
+                              calculatePolyScarcity=F)
+
+  head(grid2polyX)
+
+  unique(grid2polyX$scenario)
+
+  grid2polyX %>% group_by(param,scenario,units,class,region,x)%>%
+    dplyr::summarize(value=sum(value,na.rm=T))
+
+}
 
 #------------------------------
-# I/O
-#-----------------------------
+# Plot Grid
+#-------------------------------
+
+if(T){}
+
+#------------------------------
+# Plot New Polys
+#-------------------------------
+
+if(T){}
+
+
+
+
