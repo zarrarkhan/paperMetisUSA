@@ -1,6 +1,5 @@
 Update DOI after publication
 
-
 # khan_et_al_2021_interconnectivity_usa
 Evolution of energy-water-agriculture interconnectivity across the U.S.
 

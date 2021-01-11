@@ -17,7 +17,6 @@ library(ggExtra); library(plotly); library(htmlwidgets); library(circlize)
 #............................
 
 if(T){
-
   # Download Raw GCAM Outputs from Zenodo:
   # Set dirOutputs_i to the unzipped downloaded folder.
   gcamdatabase_i <-paste("C:/Z/projects/current/00_metisGCAMUSA/gcam-core/output/metisUSA2100",sep="")
