@@ -1,30 +1,34 @@
 #............................
-# Paper metis USA data
+# Scripts to produce figures for khan_et_al_2021_interconnectivity_usa
 #............................
 
-# Paper Repo: https://github.com/zarrarkhan/paperMetisUSA
+# Repo: https://github.com/zarrarkhan/khan_et_al_2021_interconnectivity_usa
 
 #................................
 # Load Libraries and initial inputs
 #............................
 
+# Install packages as needed
+library(rgcam); library(metis); library(tidyr); library(dplyr);library(ggplot2); library(ggrepel);
+library(ggExtra); library(plotly); library(htmlwidgets); library(circlize)
+
+#................................
+# Initial inputs
+#............................
+
 if(T){
 
-  # devtools::install_github("slowkow/ggrepel")
-  # devtools::install_github("daattali/ggExtra")
-  # install.packages("plotly");
-  library(metis); library(tidyr); library(dplyr);library(ggplot2); library(ggrepel);
-  library(ggExtra); library(plotly); library(htmlwidgets); library(circlize)
-
-  dirOutputs_i = "C:/Z/projects/current/00_metisGCAMUSA/metisOutputsUSA2100"
-  if(!dir.exists(paste(dirOutputs_i,sep=''))){dir.create(paste(dirOutputs_i,sep=''))}
-
-  xRange_i = c(2015,2020,2030,2040,2050,2060,2070,2080,2090,2100)
-
+  # Download Raw GCAM Outputs from Zenodo:
+  # Set dirOutputs_i to the unzipped downloaded folder.
   gcamdatabase_i <-paste("C:/Z/projects/current/00_metisGCAMUSA/gcam-core/output/metisUSA2100",sep="")
   #rgcam::localDBConn("C:/Z/projects/metisGCAMUSA/gcam-core/output","metisUSAOld") # Note names of scenarios
   dataProjFile_i <- "metisUSA_dataProj.proj"
+  
+  dirOutputs_i = paste(getwd(),"/paperFigures",sep="")
+  if(!dir.exists(paste(dirOutputs_i,sep=''))){dir.create(paste(dirOutputs_i,sep=''))}
 
+  xRange_i = c(2015,2020,2030,2040,2050,2060,2070,2080,2090,2100)
+  
   colorsSubregType_i <- c("Basin"="olivedrab4","State"="goldenrod3","County"="darkgray","National"="indianred4")
   orderSubregType_i <- c("County","State","Basin","National")
 
@@ -52,8 +56,8 @@ if(T){
                 #"SSP2WatConstRunoff",
                 #"SSP2WatConstCarbon25",
                 "SSP2WatConstCarbon")
-  scenNewNames_i <- c("Ref","SSP3","SSP5",#"NoWatConst","Carbon25", "Runoff",
-                     "Carbon")
+  scenNewNames_i <- c("Reference","Low Pop/GDP","High Pop/GDP",#"NoWatConst","Carbon25", "Runoff",
+                     "Low Carbon")
   scenOrigNewdf_i <- data.frame(scenario=scenOrigNames_i,scenNew=scenNewNames_i)
   regionsSelect_i <- c(metis.assumptions("US52"),"USA")
   paramsSelect_i <- c("pop","gdp",
@@ -104,9 +108,9 @@ if(T){
 # GCAM data (Water-Energy-Food by States-Basin-GLU)
 #...............................
 
-if(F){
+if(T){
 
-  dataGCAM<-metis.readgcam(#gcamdatabase = gcamdatabase_i,
+  dataGCAM<-metis.readgcam(gcamdatabase = gcamdatabase_i,
                            dataProjFile = dataProjFile_i,
                            scenOrigNames = scenOrigNames_i,
                            scenNewNames = scenNewNames_i,

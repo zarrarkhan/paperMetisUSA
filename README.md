@@ -1,7 +1,7 @@
 Update DOI after publication
 
 
-# khan_et_al_2021_ERL_interconnectivity_usa
+# khan_et_al_2021_interconnectivity_usa
 Evolution of energy-water-agriculture interconnectivity across the U.S.
 
 ## Abstract
@@ -11,11 +11,13 @@ This study analyzes the strength of interconnections between multiple resources 
 Update journal citation after publication.
 
 ## Script for Producing Figures
+- https://github.com/zarrarkhan/khan_et_al_2021_interconnectivity_usa/blob/master/khan_et_al_2021_interconnectivity_usa_RFigureScripts.R
 
-
+## Raw Outputs from GCAM Runs
+- https://doi.org/10.5281/zenodo.4430925
 
 ## Contributing models
 | Model | Version | Repository Link |
 |-------|---------|-----------------|
-| GCAM | versionx | https://github.com/JGCRI/gcam-core/tree/gcam-v5.3|
-| Metis | tag khan_et_al_2021_ERL_interconnectivity_usa | https://github.com/JGCRI/metis/tree/khan_et_al_2021_ERL_interconnectivity_usa|
+| GCAM-USA | release v5.3 | https://github.com/JGCRI/gcam-core/tree/gcam-v5.3|
+| Metis | tag khan_et_al_2021_interconnectivity_usa | https://github.com/JGCRI/metis/tree/khan_et_al_2021_interconnectivity_usa|
